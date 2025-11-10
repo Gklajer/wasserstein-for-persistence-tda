@@ -1,0 +1,33 @@
+<VTKFile type="vtkMultiBlockDataSet" version="1.0" byte_order="LittleEndian" header_type="UInt64">
+  <vtkMultiBlockDataSet>
+    <DataSet index="0" name="volcano_2011_150_am.vtu" file="VolcanoDgm/VolcanoDgm_0_0.vtu"/>
+    <DataSet index="1" name="volcano_2011_151_am.vtu" file="VolcanoDgm/VolcanoDgm_1_0.vtu"/>
+    <DataSet index="2" name="volcano_2011_156_am.vtu" file="VolcanoDgm/VolcanoDgm_2_0.vtu"/>
+    <DataSet index="3" name="volcano_2011_157_am.vtu" file="VolcanoDgm/VolcanoDgm_3_0.vtu"/>
+    <DataSet index="4" name="volcano_2011_164_am.vtu" file="VolcanoDgm/VolcanoDgm_4_0.vtu"/>
+    <DataSet index="5" name="volcano_2011_165_am.vtu" file="VolcanoDgm/VolcanoDgm_5_0.vtu"/>
+    <DataSet index="6" name="volcano_2011_150_pm.vtu" file="VolcanoDgm/VolcanoDgm_6_0.vtu"/>
+    <DataSet index="7" name="volcano_2011_151_pm.vtu" file="VolcanoDgm/VolcanoDgm_7_0.vtu"/>
+    <DataSet index="8" name="volcano_2011_156_pm.vtu" file="VolcanoDgm/VolcanoDgm_8_0.vtu"/>
+    <DataSet index="9" name="volcano_2011_157_pm.vtu" file="VolcanoDgm/VolcanoDgm_9_0.vtu"/>
+    <DataSet index="10" name="volcano_2011_164_pm.vtu" file="VolcanoDgm/VolcanoDgm_10_0.vtu"/>
+    <DataSet index="11" name="volcano_2011_165_pm.vtu" file="VolcanoDgm/VolcanoDgm_11_0.vtu"/>
+  </vtkMultiBlockDataSet>
+  <FieldData>
+    <DataArray type="Float64" Name="TimeStep" NumberOfTuples="1" format="binary" RangeMin="150" RangeMax="150">
+      CAAAAAAAAAAAAAAAAMBiQA==
+    </DataArray>
+    <DataArray type="Float64" Name="ClusterID" NumberOfTuples="1" format="binary" RangeMin="0" RangeMax="0">
+      CAAAAAAAAAAAAAAAAAAAAA==
+    </DataArray>
+    <Array type="String" Name="Modality" NumberOfTuples="1" format="binary">
+      BQAAAAAAAABBSVJTAA==
+    </Array>
+    <DataArray type="Float64" Name="Dim." NumberOfTuples="1" format="binary" RangeMin="2" RangeMax="2">
+      CAAAAAAAAAAAAAAAAAAAQA==
+    </DataArray>
+    <Array type="String" Name="Generation" NumberOfTuples="1" format="binary">
+      CQAAAAAAAABBY3F1aXJlZAA=
+    </Array>
+  </FieldData>
+</VTKFile>
