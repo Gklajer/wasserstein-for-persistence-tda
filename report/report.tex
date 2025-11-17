@@ -1,0 +1,82 @@
+\documentclass[sigconf,nonacm]{acmart}
+
+\bibliographystyle{alpha}
+\title{Persistence Diagrams as Barycenters for Wassertein Distances\\{\small Report on \textit{Wasserstein 
+      Dictionaries of Persistence Diagrams}}}
+
+\author{Matthieu Pierre Boyer}
+\authornote{All authors contributed equally.}
+\affiliation{%
+	\institution{École Normale Supérieure}
+	\city{Paris}
+	\country{France}}
+\email{matthieu.boyer@ens.fr}
+
+\author{Gary Klajer}
+\authornotemark[1]
+\affiliation{%
+	\institution{ÉNS Paris-Saclay}
+	\city{Gif-sur-Yvette}
+	\country{France}}
+\email{gary.klajer@ens-paris-saclay.fr}
+
+\author{Marc Perlade}
+\authornotemark[1]
+\affiliation{%
+	\institution{École Normale Supérieure}
+	\city{Paris}
+	\country{France}}
+\email{marc.perlade@ens.fr}
+
+\def\abs#1{\left|#1\right|}
+
+
+\begin{abstract}
+  In this report based on \cite{sisouk2023wassersteindictionariespersistencediagrams},
+  we study the idea of doing non-linear dimensionality reduction on a large dataset of persistence diagrams,
+  using atomic persistence diagrams that span the dataset for the hull defined by the optimal transport of
+  diagrams.
+  We will first give the mathematical intuition on why this could work then provide an algorithm that
+  proposes a method to compute such a representation.
+	We will finally provide benchmarks on the different methods, implemented in Rust.
+	% for a blazingly fast™ result.
+\end{abstract}
+
+\keywords{Persistence, Dictionaries, Optimization, Topological Data Analysis}
+
+\begin{teaserfigure}
+	% ce serait bien d'avoir une image ici
+	%   \includegraphics[width=\textwidth]{sampleteaser}
+	\caption{}
+	\Description{}
+	\label{fig:teaser}
+\end{teaserfigure}
+
+\begin{document}
+\maketitle
+
+\section*{Introduction}
+
+\section{Mathematical preliminaries}
+\subsection{Representation of persistence diagrams}
+We are given a set $X = \left\{X_{1}, \ldots, X_{n}\right\}$ of $N$ persistence diagrams.
+Each input diagram is given as the set of its persistence pairs mapped to points in the $2$-dimensional
+plane\footnote{Or half-plane above the line $y = x$.}, along with their birth and death persistence.
+
+\subsection{\texorpdfstring{$2$-dimensional}{2-dimensional} optimal transport}
+Optimal transport is the mathematical field concerned with mapping similarities from a space with
+some sense of geometry to the space of probability distributions on that space.
+
+
+\subsection{}
+
+\section{Algorithm}
+\subsection{}
+
+\subsection{Implementation}
+
+\section{Analysis and comparison of implementations}
+
+\appendix
+\bibliography{report}
+\end{document}
