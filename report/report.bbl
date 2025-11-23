@@ -1,7 +1,17 @@
-\begin{thebibliography}{SDT23}
+\begin{thebibliography}{KMN16}
+
+\bibitem[KMN16]{kerber2016geometryhelpscomparepersistence}
+Michael Kerber, Dmitriy Morozov, and Arnur Nigmetov.
+\newblock Geometry helps to compare persistence diagrams, 2016.
 
 \bibitem[SDT23]{sisouk2023wassersteindictionariespersistencediagrams}
 Keanu Sisouk, Julie Delon, and Julien Tierny.
 \newblock Wasserstein dictionaries of persistence diagrams, 2023.
+
+\bibitem[VBT19]{Vidal_2019}
+Jules Vidal, Joseph Budin, and Julien Tierny.
+\newblock Progressive wasserstein barycenters of persistence diagrams.
+\newblock {\em IEEE Transactions on Visualization and Computer Graphics}, page
+  1–1, 2019.
 
 \end{thebibliography}
