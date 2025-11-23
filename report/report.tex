@@ -35,6 +35,15 @@
 \def\R{\mathbb{R}}
 \def\llambda{\mathbf{\lambda}}
 \def\D{\mathcal{D}}
+\usepackage{algorithm, algpseudocode}
+\algblock{Input}{EndInput}
+\algnotext{EndInput}
+\algblock{Output}{EndOutput}
+\algnotext{EndOutput}
+\algnotext{EndWhile}
+\algnotext{EndIf}
+\algnotext{EndFor}
+\algnotext{EndFunction}
 
 
 \begin{abstract}
@@ -163,14 +172,14 @@ In this section we will describe the procedure used to compute the atoms $\mathc
 weights $\Lambda = \{\llambda_{1}, \ldots, \llambda_{N}\}$ for the Wasserstein barycenter description of our
 dataset $X_{1}, \ldots, X_{N}$.
 
-\subsection{General algorithm}
+\subsection{General principle}
 The algorithm works as a joint optimization on two sub-problems: the optimization on the atoms $\D$ and the
 optimization on the vector of barycentric weights for $X_{i}$ denoted $\llambda_{i} \in \Delta_{m}$
 in order to minimize the sum of the Fréchet energies (the \emph{dictionary energy})
 \begin{equation*}
 	E_{D}(\Lambda, \D) = \sum_{n = 1}^{N}W_{2}^{2}(Y(\llambda_{n}, \D), X_{n}),
 \end{equation*}
-where $Y(\llambda_{n}, \D) = \underset{Y}{\rm argmin} E_{F}(Y, \D, \llambda_{n}$.
+where $Y(\llambda_{n}, \D) = \underset{Y}{\rm argmin} E_{F}(Y, \D, \llambda_{n})$.
 
 It will thus work in two gradient descent steps:
 \begin{enumerate}
@@ -180,7 +189,7 @@ It will thus work in two gradient descent steps:
 We refer the reader to Section 3 of \cite{sisouk2023wassersteindictionariespersistencediagrams}
 for the detail of the computations, as those are not the focus of this report.
 
-\paragraph{Weight Optimization}
+\paragraph{Weight optimization}
 Since the dictionary energy for the weights is separated, we consider here only a single $X_{i}$ to give
 the expression of the gradient and the descent step.
 Since our optimal transport plans are optimal assignments $\phi_{1}, \ldots, \phi_{m}$ between
@@ -233,14 +242,84 @@ The algorithm above was implemented in Rust to try and reproduce the results of 
 We chose to represent the diagrams as dynamic arrays of points, and implemented as many optimizations as
 we could.
 
+\paragraph{Barycenter algorithm}
+In \cite{Vidal_2019}, on which \cite{sisouk2023wassersteindictionariespersistencediagrams} is partially
+based, the authors present a few optimizations for what they call a \emph{progressive} approximation of
+barycenter for the Wasserstein metric of persistence diagrams.
+
+\begin{algorithm}
+	\caption{Barycentric Approximation Algorithm}\label{alg:bary}
+	\begin{algorithmic}
+		\Function{Barycenter}{$\D = (a_{i}, \ldots, a_{m}), \llambda$}
+		\Output{: Barycenter $Y(\llambda, \D)$}
+		\EndOutput
+		\State $Y(\llambda, \D) \gets a_{i}$ \Comment{$i$ randomly chosen in $[1, m]$}
+		\While{$E_F$ decreases and $t \leq t_{\rm max}$}\Comment{Do at most $t_{\rm max}$ iterations}
+		\For{$i \in [1, m]$}
+		\State{$\phi_{i} \gets \mathrm{Matching}_{\delta}((a_{i})_{\rho}, Y(\llambda, \D))$}
+		\EndFor
+		\State{$Y(\llambda, \D) \gets \mathrm{Update}(\phi_{1}, \ldots, \phi_{m})$}\Comment{Arithmetic mean}
+		\State{$\delta \gets \frac{\delta}{5}$}
+		\State{$\rho \gets PS(\rho)$}
+		\EndWhile
+		\Return{$Y(\llambda, \D)$}
+		\EndFunction
+	\end{algorithmic}
+\end{algorithm}
+
+They introduce a few main optimizations, not all of which we implemented.
+\begin{itemize}
+	\item First, they suggest that the different matching computations retain the previous assignations in
+	      memory when creating a matching (see below).
+	\item Moreover, when computing the assignments, progressively increasing the accuracy of the algorithm
+	      we use while retaining the previous prices for our initialisation yields better and better result
+	      with a good performance for the computation time.
+	\item They suggest that inside actual persistence diagrams present many artifacts introduced by the
+	      filtration used to generate them.
+	      Those artifacts come in the form of persistence pairs with small difference between their birth
+	      and their death.
+	      By beginning the optimization process on a diagram where those artifacts are removed, then
+	      progressively adding them back by lowering the threshold of "too low persistence", they are able
+	      to locally limit the number of close initialized points and thus distribute among the inputs
+	      what the new barycenter points should be.
+	      To do so, they define for $\rho > 0$ a threshold, the filtered diagram $a_{\mid \rho}$ consisting of
+	      the points $a \in a_{i}$ such that $y_{a} - x_{a} > \rho$.
+	      They chose to reduce $\rho$ so that the size of $a_{\mid \rho}$ does not increase by more than
+	      $10\%$ at each iteration.
+	\item Finally, the authors have added parallelism to their algorithm, which comes at the matching
+	      step, which clearly is dependent only on the atom considered and not the others.
+	      We did not implement parallelism due to time constraints. % FIXME:
+\end{itemize}
+
 \paragraph{Matching algorithm}
 The main point of optimization is inside the matching computation. Indeed, after each optimization step
 we need to recompute every barycentric approximation of our points.
 As such, the classical Kuhn-Munkres (or Hungarian) algorithm will not be sufficient.
 
-Following \cite{Vidal_2019} and \cite{kerber2016geometryhelpscomparepersistence}, we implemented a variant
+Following \cite{kerber2016geometryhelpscomparepersistence}, we implemented a variant
 of the auction algorithm which makes use of $k$-d trees, a space partioning data-structure which allows for
 fast closest-neighbour queries and returns a $1 + \delta$ approximation of the result in a bit faster time.
+
+\smallskip
+
+This comes at the cost of a large overhead computation, but this can be reduced a bit by prize memorization.
+In this case, this amounts to initializing the prices for the bidders to the ones they had at the last round
+of auction.
+The progressive increase in accuracy is done by dividing $\delta$ by $5$ after every major step.
+
+\paragraph{Gradient descent algorithm}
+The gradient descent algorithm asks that we compute the barycentric approximations for each base diagram in the data set after each substep of the descent.
+
+However, computing the matchings between atoms and computing the barycenters of the atoms is easily done
+in parallel.
+Indeed, once the atomic dictionary $\D$ is known, the problem is purely dependent on the weights and thus it
+can be solved independently for each $X_{i}$.
+Then, the computation of the gradients can also be done in parallel, independently for each $X_{i}$.
+
+\medskip
+% FIXME:
+We did not have time to add parallelism in our implementation, but as you will see this did not have such
+a major impact on the resulting computation time.
 
 \section{Analysis and comparison of implementations}
 
