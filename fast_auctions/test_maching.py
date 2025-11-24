@@ -16,7 +16,7 @@ for (i, j) in enumerate(off_diag):
     line = np.array([diagram0[i], paired])
     plt.plot(line[:, 0], line[:, 1], "-b")
 
-for (i, j) in enumerate(off_diag):
+for (i, j) in enumerate(diag):
     if j != 2 ** 32 - 1:
         continue
     point = diagram1[i]

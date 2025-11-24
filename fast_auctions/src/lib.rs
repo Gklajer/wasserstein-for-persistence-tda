@@ -1,19 +1,30 @@
-use numpy::ndarray::{ArrayView2, ArrayViewMut1, ArrayViewMut2};
+use std::time::Duration;
+
+use numpy::ndarray::{ArrayView1, ArrayView2, ArrayViewMut1, ArrayViewMut2};
+
+use crate::barycenter::BarycenterOutput;
 
 mod auction;
+mod barycenter;
 mod binary_heap;
 mod kd_tree;
 mod normal;
-mod barycenter;
 
 #[pyo3::pymodule]
 mod wasp {
-    use pyo3::{Python, prelude::*};
+    use std::time::Duration;
+
+    use pyo3::{
+        Python,
+        prelude::*,
+        types::PyList,
+    };
 
     use numpy::{
-        PyArray1, PyArray2, PyArrayMethods, PyReadonlyArray2,
+        PyArray1, PyArray2, PyArrayMethods, PyReadonlyArray1, PyReadonlyArray2,
         ndarray::{ArrayView2, ArrayViewMut1},
     };
+
 
     /**
      * Python function to compute the L^2 Wasserstein distance of two diagrams, and their optimal matching.
@@ -53,6 +64,58 @@ mod wasp {
         .unwrap();
 
         (off_diag_output.unbind(), diag_output.unbind(), distance)
+    }
+
+    /**
+     * The input atoms NEED to be sorted by decreasing order of persistence
+     */
+    #[pyfunction]
+    pub fn wasserstein_barycenter<'py>(
+        dictionary: Bound<'py, PyAny>,
+        lambda: PyReadonlyArray1<'py, f64>,
+        max_duration: f64,
+    ) -> (Py<PyArray2<f64>>, Py<PyList>, Py<PyList>) {
+        let readonly_arrays = dictionary
+            .try_iter()
+            .unwrap()
+            .map(|object| {
+                let object = object.unwrap();
+                object.extract().unwrap()
+            })
+            .collect::<Vec<PyReadonlyArray2<f64>>>();
+
+        let views = readonly_arrays
+            .iter()
+            .map(|readonly| readonly.as_array())
+            .collect::<Vec<ArrayView2<f64>>>();
+
+        let lambda = lambda.as_array();
+
+        let barycenter =
+            crate::wasserstein_barycenter(&views, &lambda, Duration::from_secs_f64(max_duration))
+                .unwrap();
+
+        (
+            PyArray2::from_array(dictionary.py(), &barycenter.diagram).unbind(),
+            PyList::new(
+                dictionary.py(),
+                barycenter
+                    .off_diag
+                    .iter()
+                    .map(|off_diag| PyArray1::from_array(dictionary.py(), off_diag)),
+            )
+            .unwrap()
+            .unbind(),
+            PyList::new(
+                dictionary.py(),
+                barycenter
+                    .diag
+                    .iter()
+                    .map(|diag| PyArray1::from_array(dictionary.py(), diag)),
+            )
+            .unwrap()
+            .unbind(),
+        )
     }
 
     /**
@@ -113,6 +176,30 @@ pub fn wasserstein_distance(
         &mut off_diag,
         &mut diag,
         delta,
+    ))
+}
+
+/**
+ * Rust equivalent of the wasp::barycenter function
+ */
+pub fn wasserstein_barycenter(
+    dictionary: &[ArrayView2<f64>],
+    lambda: &ArrayView1<f64>,
+    max_duration: Duration,
+) -> Result<BarycenterOutput, String> {
+    for atom in dictionary.iter() {
+        validate_input_diagram(atom)?;
+    }
+    if dictionary.len() != lambda.len() {
+        return Err(String::from(
+            "dictionary and lambda must have the same length! ",
+        ));
+    }
+
+    Ok(barycenter::wasserstein_barycenter(
+        dictionary,
+        lambda,
+        max_duration,
     ))
 }
 

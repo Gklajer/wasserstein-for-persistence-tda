@@ -11,7 +11,8 @@ use crate::auction;
 
 /**
  * Performs a binary search to determine the largest slice 0..n
- * such that all the persistences are larger than rho
+ * such that all the persistences are larger than rho.
+ * The returned value is max(2, n)
  */
 fn threshold_index(atom: &ArrayView2<f64>, rho: f64) -> usize {
     let mut low = 0;
@@ -29,7 +30,7 @@ fn threshold_index(atom: &ArrayView2<f64>, rho: f64) -> usize {
         }
     }
 
-    low
+    usize::max(2, low)
 }
 
 /**
@@ -41,7 +42,7 @@ fn min_rho(atom: &ArrayView2<f64>, previous_length: usize, epsilon: f64) -> f64 
     const MAX_RATIO: f64 = 1.1;
     const TAU: f64 = 4.0;
 
-    let max_new_length = (previous_length as f64) as usize;
+    let max_new_length = (MAX_RATIO * previous_length as f64) as usize;
     let max_new_length = usize::min(atom.shape()[0], max_new_length);
     let index = max_new_length.saturating_sub(1);
 
@@ -83,6 +84,9 @@ fn update_barycenter<'v1, 'v2>(
             .outer_iter()
             .zip(off_diag.iter())
         {
+            if *index == u32::MAX {
+                continue;
+            }
             output
                 .slice_mut(s![*index as usize, ..])
                 .scaled_add(*lambda, &point);
@@ -139,9 +143,9 @@ fn extend_barycenter(
 //For the matching, the dictionary atoms are the sets
 //of bidders and the barycenter the set of objects
 pub struct BarycenterOutput {
-    diagram: Array2<f64>,
-    diag: Vec<Array1<u32>>,
-    off_diag: Vec<Array1<u32>>,
+    pub diagram: Array2<f64>,
+    pub diag: Vec<Array1<u32>>, // /!\ can be smaller than the atom
+    pub off_diag: Vec<Array1<u32>>, 
 }
 
 /**
@@ -164,6 +168,7 @@ pub fn wasserstein_barycenter(
             })
             .max_by(f64::total_cmp)
             .unwrap();
+    rho = 0.0; //Disabled persistence scaling for testing purposes
 
     let mut atom_lengths = dictionary
         .iter()
@@ -223,6 +228,8 @@ pub fn wasserstein_barycenter(
             energy += *lambda * d2;
         }
 
+        dbg!(energy);
+
         if let Some(last_energy) = last_energy {
             if energy >= last_energy && epsilon < 1.0e-5 {
                 break 'l;
@@ -245,7 +252,7 @@ pub fn wasserstein_barycenter(
         epsilon /= 5.0;
 
         //Persistence scaling
-        if start.elapsed() < max_duration / 10 {
+        /*if start.elapsed() < max_duration / 10 {
             //Update rho
             rho = dictionary
                 .iter()
@@ -287,7 +294,7 @@ pub fn wasserstein_barycenter(
             }
 
             atom_lengths = new_atom_lengths;
-        }
+        }*/
 
         //Ran out of time
         if start.elapsed() >= max_duration {
