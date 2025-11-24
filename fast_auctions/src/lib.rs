@@ -4,6 +4,7 @@ mod auction;
 mod binary_heap;
 mod kd_tree;
 mod normal;
+mod barycenter;
 
 #[pyo3::pymodule]
 mod wasp {
@@ -111,8 +112,6 @@ pub fn wasserstein_distance(
         &y,
         &mut off_diag,
         &mut diag,
-        None, 
-        None,
         delta,
     ))
 }

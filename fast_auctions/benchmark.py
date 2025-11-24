@@ -12,7 +12,9 @@ def benchmark(n):
     
     start = time.time()
     for [a, b] in pairs:
-        _, _, _ = wasp.wasserstein_distance(a, b, 0.01)
+        _, _, _ = wasp.wasserstein_distance(a, b, np.sqrt(1.0 + 0.01) - 1.0) 
+        #we control the square of the Wasserstein distance
+        #while the article controls the distance itself, so our delta is not the same
     end = time.time()
 
     return (end - start) / count
