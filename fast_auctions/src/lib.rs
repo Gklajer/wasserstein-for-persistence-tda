@@ -9,22 +9,18 @@ mod barycenter;
 mod binary_heap;
 mod kd_tree;
 mod normal;
+mod sort;
 
 #[pyo3::pymodule]
 mod wasp {
     use std::time::Duration;
 
-    use pyo3::{
-        Python,
-        prelude::*,
-        types::PyList,
-    };
+    use pyo3::{Python, prelude::*, types::PyList};
 
     use numpy::{
-        PyArray1, PyArray2, PyArrayMethods, PyReadonlyArray1, PyReadonlyArray2,
+        PyArray1, PyArray2, PyArrayMethods, PyReadonlyArray1, PyReadonlyArray2, PyReadwriteArray2,
         ndarray::{ArrayView2, ArrayViewMut1},
     };
-
 
     /**
      * Python function to compute the L^2 Wasserstein distance of two diagrams, and their optimal matching.
@@ -51,14 +47,14 @@ mod wasp {
         let mut off_diag_output_readwrite = off_diag_output.readwrite();
         let mut diag_output_readwrite = diag_output.readwrite();
 
-        let off_diag_output_view: ArrayViewMut1<u32> = off_diag_output_readwrite.as_array_mut();
-        let diag_output_view: ArrayViewMut1<u32> = diag_output_readwrite.as_array_mut();
+        let mut off_diag_output_view: ArrayViewMut1<u32> = off_diag_output_readwrite.as_array_mut();
+        let mut diag_output_view: ArrayViewMut1<u32> = diag_output_readwrite.as_array_mut();
 
         let distance = crate::wasserstein_distance(
-            x_view,
-            y_view,
-            off_diag_output_view,
-            diag_output_view,
+            &x_view,
+            &y_view,
+            &mut off_diag_output_view,
+            &mut diag_output_view,
             delta,
         )
         .unwrap();
@@ -67,7 +63,17 @@ mod wasp {
     }
 
     /**
-     * The input atoms NEED to be sorted by decreasing order of persistence
+     * Sorts a persistence diagram by decreasing order of persistence
+     */
+    #[pyfunction]
+    pub fn sort_by_persistence<'py>(mut diagram: PyReadwriteArray2<'py, f64>) {
+        let mut view = diagram.as_array_mut();
+        crate::sort_by_persistence(&mut view).unwrap();
+    }
+
+    /**
+     * The input atoms NEED to be sorted by decreasing order of persistence.
+     * There is no guarantee on the result of the algorithm if this is not the case.
      */
     #[pyfunction]
     pub fn wasserstein_barycenter<'py>(
@@ -126,8 +132,8 @@ mod wasp {
     pub fn sample_normal_diagram<'py>(py: Python<'py>, n: usize) -> Py<PyArray2<f64>> {
         let output = PyArray2::<f64>::zeros(py, [n, 2], false);
         let mut output_readwrite = output.readwrite();
-        let output_view = output_readwrite.as_array_mut();
-        crate::sample_normal_diagram(output_view);
+        let mut output_view = output_readwrite.as_array_mut();
+        crate::sample_normal_diagram(&mut output_view);
         output.unbind()
     }
 }
@@ -152,10 +158,10 @@ fn validate_input_diagram(x: &ArrayView2<f64>) -> Result<(), String> {
  * Rust equivalent of the wasp::wasserstein_distance function
  */
 pub fn wasserstein_distance(
-    x: ArrayView2<f64>,
-    y: ArrayView2<f64>,
-    mut off_diag: ArrayViewMut1<u32>,
-    mut diag: ArrayViewMut1<u32>,
+    x: &ArrayView2<f64>,
+    y: &ArrayView2<f64>,
+    mut off_diag: &mut ArrayViewMut1<u32>,
+    mut diag: &mut ArrayViewMut1<u32>,
     delta: f64,
 ) -> Result<f64, String> {
     validate_input_diagram(&x)?;
@@ -177,6 +183,15 @@ pub fn wasserstein_distance(
         &mut diag,
         delta,
     ))
+}
+
+/**
+ * Rust equivalent of the wasp::sort_by_persistence function
+ */
+pub fn sort_by_persistence(diagram: &mut ArrayViewMut2<f64>) -> Result<(), String> {
+    validate_input_diagram(&diagram.view())?;
+    sort::sort_by_persistence(diagram);
+    Ok(())
 }
 
 /**
@@ -206,6 +221,6 @@ pub fn wasserstein_barycenter(
 /**
  * Rust equivalent of the wasp::sample_normal_diagram
  */
-pub fn sample_normal_diagram(mut output: ArrayViewMut2<f64>) {
-    normal::sample_diagram(100.0, &mut output);
+pub fn sample_normal_diagram(output: &mut ArrayViewMut2<f64>) {
+    normal::sample_diagram(100.0, output);
 }

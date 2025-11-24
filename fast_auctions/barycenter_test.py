@@ -22,8 +22,10 @@ def plot_matching(bidders, objects, off_diag, diag, fmt):
         plt.plot(line[:, 0], line[:, 1], fmt)
 
 diagram0 = wasp.sample_normal_diagram(10)
+wasp.sort_by_persistence(diagram0)
 diagram1 = wasp.sample_normal_diagram(10)
-bary, off_diag, diag = wasp.wasserstein_barycenter([diagram0, diagram1], np.array([0.5, 0.5]), 1.0)
+wasp.sort_by_persistence(diagram1)
+bary, off_diag, diag = wasp.wasserstein_barycenter([diagram0, diagram1], np.array([0.5, 0.5]), 10.0)
 
 plt.scatter(diagram0[:, 0], diagram0[:, 1], c = "r", alpha=0.5)
 plot_matching(diagram0, bary, off_diag[0], diag[0], "-r")

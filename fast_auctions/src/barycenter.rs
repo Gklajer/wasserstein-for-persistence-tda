@@ -42,11 +42,14 @@ fn min_rho(atom: &ArrayView2<f64>, previous_length: usize, epsilon: f64) -> f64 
     const MAX_RATIO: f64 = 1.1;
     const TAU: f64 = 4.0;
 
-    let max_new_length = (MAX_RATIO * previous_length as f64) as usize;
-    let max_new_length = usize::min(atom.shape()[0], max_new_length);
-    let index = max_new_length.saturating_sub(1);
+    let max_new_length = f64::ceil(MAX_RATIO * previous_length as f64) as usize;
 
-    let rho = atom[(index, 1)] - atom[(index, 0)];
+    let rho = if max_new_length >= atom.shape()[0] {
+        0.0
+    } else {
+        atom[(max_new_length, 1)] - atom[(max_new_length, 0)]
+    };
+
     let rho = f64::max(rho, f64::sqrt(TAU * epsilon));
 
     rho
@@ -157,6 +160,8 @@ pub fn wasserstein_barycenter(
     lambda: &ArrayView1<f64>,
     max_duration: Duration,
 ) -> BarycenterOutput {
+    const MIN_EPSILON_RATIO: f64 = 1e-5;
+
     let start = Instant::now();
 
     let mut rho = 0.5
@@ -168,7 +173,7 @@ pub fn wasserstein_barycenter(
             })
             .max_by(f64::total_cmp)
             .unwrap();
-    rho = 0.0; //Disabled persistence scaling for testing purposes
+    //rho = 0.0;
 
     let mut atom_lengths = dictionary
         .iter()
@@ -198,7 +203,10 @@ pub fn wasserstein_barycenter(
         .map(|&length| vec![0.0; length])
         .collect::<Vec<_>>();
 
-    let mut epsilon = intial_epsilon(dictionary, &atom_lengths);
+    let initial_epsilon = intial_epsilon(dictionary, &atom_lengths);
+    let mut epsilon = initial_epsilon;
+    let min_epsilon = MIN_EPSILON_RATIO * initial_epsilon;
+    let mut can_break = false;
 
     let mut last_energy: Option<f64> = None;
 
@@ -228,10 +236,8 @@ pub fn wasserstein_barycenter(
             energy += *lambda * d2;
         }
 
-        dbg!(energy);
-
         if let Some(last_energy) = last_energy {
-            if energy >= last_energy && epsilon < 1.0e-5 {
+            if can_break && energy >= last_energy {
                 break 'l;
             }
         }
@@ -250,9 +256,13 @@ pub fn wasserstein_barycenter(
 
         //Epsilon scaling
         epsilon /= 5.0;
+        if epsilon <= min_epsilon {
+            can_break = true;
+            epsilon = min_epsilon;
+        }
 
         //Persistence scaling
-        /*if start.elapsed() < max_duration / 10 {
+        if start.elapsed() < max_duration / 10 {
             //Update rho
             rho = dictionary
                 .iter()
@@ -294,7 +304,7 @@ pub fn wasserstein_barycenter(
             }
 
             atom_lengths = new_atom_lengths;
-        }*/
+        }
 
         //Ran out of time
         if start.elapsed() >= max_duration {
