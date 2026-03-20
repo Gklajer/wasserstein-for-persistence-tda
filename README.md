@@ -1,4 +1,4 @@
-# wasserstein-for-persistence-tda
+# wasper-bary
 
 `wasp` is a Rust re-implementation of the [Wasserstein representation for Persistence diagrams](https://arxiv.org/abs/2304.14852) paper. The original C++ implementation is available in [this repository](https://github.com/Keanu-Sisouk/W2-PD-Dict).
 
